@@ -185,13 +185,38 @@ fabricating success.
 the `sky130hd` platform. The starter constraint is 20 ns (50 MHz), 35% core
 utilization, and 4 ns external I/O delays. See `openroad/README.md`.
 
-The official `openroad/orfs:latest` Docker flow successfully synthesized the
-SKY130HD core: 7,335 mapped cells and 71,083.174 µm² cell area, with zero Yosys
-design-check problems. Early floorplan timing reported +5.45 ns setup WNS at
-20 ns and estimated 2.53 mW power. The optional continuation reached CTS but
-the container binary terminated with `illegal instruction`; therefore no final
-hold, routing, IR-drop, or GDS result is claimed. See `openroad/README.md`.
+The SKY130HD flow synthesized the core to 7,335 mapped cells and 71,083.174 µm²
+with zero Yosys design-check problems. A complete compatibility run then passed
+CTS and routing and produced `6_final.gds`. At the 20 ns constraint, final
+extracted timing reports +1.32 ns setup WNS, +0.50 ns hold slack, and zero
+setup/hold violations. Detailed routing and antenna checks both finish with zero
+violations; placed design area is 81,482 µm² at 40% core utilization, estimated
+power is 5.39 mW, and worst reported IR drop is 0.112 mV.
+
+The run uses the local `openroad/orfs:v2-compatible-20260818` image with
+`LEC_CHECK=0` because the available ORFS binaries otherwise execute an
+unsupported AVX-512 instruction during CTS on this laptop. Consequently, the
+flow's post-resize formal equivalence check was skipped and is not claimed as
+passed. See `openroad/README.md` for commands, outputs, and limitations.
 Historical images under `docs/openroad-results/` apply only to the old subset.
+
+### Physical-design results
+
+The OpenROAD GUI below shows the completed `cpu_core` database with placed
+SKY130HD standard cells, power distribution, signal routing through `met1` to
+`met5`, I/O pins, and extracted timing loaded from the final SPEF.
+
+![Final OpenROAD physical layout](docs/openroad-v2-results/openroad-final-layout.png)
+
+The GUI timing views show representative positive setup and hold endpoint
+slacks. The histogram contains only positive setup-slack bins; authoritative
+worst-case values are taken from the generated `6_finish.rpt` report.
+
+| Setup timing | Hold timing |
+|---|---|
+| ![OpenROAD setup timing report](docs/openroad-v2-results/setup-timing-report.png) | ![OpenROAD hold timing report](docs/openroad-v2-results/hold-timing-report.png) |
+
+![OpenROAD endpoint slack histogram](docs/openroad-v2-results/endpoint-slack-histogram.png)
 
 ## Design changes from the original
 
@@ -209,6 +234,6 @@ and `docs/IMPLEMENTATION_PLAN.md` for implementation status.
 - Add valid/ready memory transactions and stalls for realistic SRAMs/buses.
 - Integrate `riscv-arch-test` with a signature region and Sail reference model.
 - Add constrained-random differential testing and functional coverage.
-- Run Verilator lint, Yosys synthesis, formal x0/trap properties, and OpenROAD.
+- Add independent formal equivalence and formal x0/trap property checks.
 - Consider a multicycle or pipelined implementation after preserving this core
   as the simple reference design.
