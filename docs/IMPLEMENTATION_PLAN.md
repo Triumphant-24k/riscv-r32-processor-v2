@@ -13,7 +13,15 @@
    generation and official architectural tests remain future work.
 6. **Lint and regression** — Questa compilation/regression pass. Verilator lint
    is pending because Verilator is unavailable.
-7. **OpenROAD** — configuration updated; execution pending because OpenROAD and
-   Yosys are unavailable.
-8. **Documentation** — architecture, interfaces, examples, and limitations are
-   documented.
+7. **OpenROAD physical design** — complete for the educational SKY130HD flow.
+   Yosys synthesis, floorplanning, placement, CTS, global and detailed routing,
+   antenna repair, parasitic extraction, timing analysis, IR-drop analysis, and
+   GDS generation completed. Final reports show zero setup, hold, detailed-route,
+   and antenna violations. The final `6_final.gds` and OpenROAD GUI launcher are
+   available under the documented `build/openroad/` flow. Post-resize LEC was
+   skipped with `LEC_CHECK=0` because the available ORFS binaries require an
+   unsupported AVX-512 instruction on this laptop; foundry signoff and tapeout
+   remain outside this educational project.
+8. **Documentation** — complete for the current implementation. Architecture,
+   interfaces, examples, limitations, final OpenROAD metrics, GUI instructions,
+   and physical-layout screenshots are documented.
