@@ -1,385 +1,209 @@
-# RV32I Subset RISC-V Processor
+# Educational RV32I Processor Core
 
-A 32-bit single-cycle processor implementing a basic subset of the RISC-V RV32I instruction set in Verilog HDL and simulated using QuestaSim.
+A readable, synthesizable, single-cycle 32-bit RISC-V core intended for RTL,
+verification, and introductory ASIC-flow study. The maintained design has
+external instruction/data buses; simulation memories are separate. The older
+subset implementation and historical screenshots are preserved as legacy
+material, not presented as current verification evidence.
 
-The processor is built using modular RTL blocks and supports a basic subset of RV32I instructions including arithmetic, immediate, memory, and branch-related control logic.
+## Architecture
 
----
+```mermaid
+flowchart LR
+  PC[PC] --> IM[Instruction interface]
+  IM --> CU[Decode and control]
+  IM --> RF[Register file]
+  IM --> IG[Immediate generator]
+  RF --> ALU
+  IG --> ALU
+  RF --> BU[Branch unit]
+  ALU --> LSU[Load/store unit]
+  LSU <--> DM[Data interface]
+  ALU --> WB[Write-back mux]
+  LSU --> WB
+  PC --> WB
+  WB --> RF
+  CU --> TRAP[Trap control]
+  BU --> PC
+  TRAP --> PC
+```
 
-## Tools Used
+Every instruction completes in one cycle when external reads are combinational.
+There is no pipeline, cache, privilege implementation, or memory handshake.
+The next PC is PC+4, branch/JAL target, or JALR target. A trap freezes the PC
+and architectural state until reset.
 
-- Verilog HDL
-- QuestaSim
-- VS Code
-- GitHub
+## Instruction support
 
----
+These instructions are implemented and exercised by the internal directed
+regression. This is not an official architectural-compliance claim.
 
-## Currently Supported Instructions
+| Group | Instructions | Directed status |
+|---|---|---|
+| Register ALU | ADD, SUB, SLL, SLT, SLTU, XOR, SRL, SRA, OR, AND | Pass |
+| Immediate ALU | ADDI, SLTI, SLTIU, XORI, ORI, ANDI, SLLI, SRLI, SRAI | Pass |
+| Loads | LB, LH, LW, LBU, LHU | Pass |
+| Stores | SB, SH, SW | Pass |
+| Branches | BEQ, BNE, BLT, BGE, BLTU, BGEU | Pass |
+| Upper immediate | LUI, AUIPC | Pass |
+| Jumps | JAL, JALR | Pass |
+| Memory order/system | FENCE, ECALL, EBREAK | Pass |
+| Pseudoinstruction | NOP (`addi x0,x0,0`) | Pass |
 
-| Instruction | Type | Operation |
-|------------|------|-----------|
-| `nop` | I-Type | No operation |
-| `addi` | I-Type | Add immediate |
-| `add` | R-Type | Add two registers |
-| `sub` | R-Type | Subtract two registers |
-| `and` | R-Type | Bitwise AND |
-| `or` | R-Type | Bitwise OR |
-| `xor` | R-Type | Bitwise XOR |
-| `lw` | I-Type | Load word from data memory |
-| `sw` | S-Type | Store word to data memory |
-| `beq` | B-Type | Branch if equal |
+FENCE is an architecturally safe no-operation for this in-order, cacheless
+core. FENCE.I and CSR instructions are not part of this implementation.
 
----
+## Datapath and modules
 
-## Project Structure
+| File | Purpose |
+|---|---|
+| `rtl/cpu_core.v` | Top-level PC, write-back, bus controls, and precise traps |
+| `rtl/control_unit.v` | Full opcode/funct validation and control generation |
+| `rtl/alu.v` | Arithmetic, logic, shifts, signed/unsigned comparisons |
+| `rtl/immediate_generator.v` | I/S/B/U/J immediate extraction |
+| `rtl/register_file.v` | 32×32 two-read/one-write registers; x0 is hardwired zero |
+| `rtl/branch_unit.v` | Signed and unsigned branch comparisons |
+| `rtl/load_store_unit.v` | Lane selection, extension, strobes, alignment checks |
+| `rtl/simulation_memory.v` | `$readmemh` instruction and byte-addressed data model |
+| `rtl/cpu_sim_top.v` | Simulation-only core/memory wrapper |
+
+Control uses a four-bit ALU operation, a three-bit immediate format, and a
+two-bit write-back selection (ALU/upper result, load result, or PC+4). Decode
+defaults all side effects off and invalid funct3/funct7 combinations trap.
+
+## Core interfaces
+
+| Signal | Direction | Meaning |
+|---|---|---|
+| `clk`, `rst` | input | Rising-edge clock and asynchronous active-high reset |
+| `instr_addr[31:0]` | output | Byte address of current instruction |
+| `instr_rdata[31:0]` | input | Combinational instruction word |
+| `data_addr[31:0]` | output | Byte address; memory returns its containing aligned word |
+| `data_rdata[31:0]` | input | Combinational aligned read word |
+| `data_read`, `data_write` | output | Mutually exclusive access enables |
+| `data_wdata[31:0]` | output | Store value replicated/positioned for byte lanes |
+| `data_wstrb[3:0]` | output | One enable per byte lane |
+| `trap_valid` | output | Latched exception indication; cleared by reset |
+| `trap_cause[3:0]`, `trap_pc[31:0]` | output | Cause code and faulting instruction address |
+
+The current interface has no valid/ready handshake. Slow or synchronous memory
+requires a small multicycle controller before integration.
+
+## Trap behavior
+
+| Cause | Value | Condition |
+|---|---:|---|
+| Instruction address misaligned | 0 | Taken branch/JAL/JALR target not four-byte aligned |
+| Illegal instruction | 2 | Unsupported opcode or invalid funct combination |
+| Breakpoint | 3 | EBREAK |
+| Load address misaligned | 4 | Odd LH/LHU or non-word-aligned LW |
+| Store address misaligned | 6 | Odd SH or non-word-aligned SW |
+| Environment call from M-mode | 11 | ECALL (educational fixed cause; no privilege state) |
+
+The faulting instruction cannot write a register or memory. The core exposes
+the trap and halts; it does not implement `mtvec`, `mepc`, other CSRs, or a trap
+return instruction. Reset is the only recovery mechanism.
+
+## Project layout
 
 ```text
-riscv-rv32i-processor/
-
-docs/
-    waveform.png
-    program_counter_waveform.png
-    instruction_memory_waveform.png
-    immediate_generator_waveform.png
-    data_memory_waveform.png
-    control_unit_waveform.png
-    Final_CPU.png
-
-src/
-    alu.v
-    register_file.v
-    program_counter.v
-    instruction_memory.v
-    immediate_generator.v
-    control_unit.v
-    data_memory.v
-    cpu_top.v
-
-tb/
-    alu_tb.v
-    register_file_tb.v
-    program_counter_tb.v
-    instruction_memory_tb.v
-    immediate_generator_tb.v
-    control_unit_tb.v
-    data_memory_tb.v
-    cpu_top_tb.v
+rtl/                 maintained synthesizable core and simulation wrapper
+tb/unit/             self-checking module tests
+tb/core/             self-checking CPU-level directed regression
+tb/programs/         program-image notes
+software/assembly/   example RV32I assembly
+software/hex/        readmemh images
+scripts/             Questa and program-build scripts
+openroad/            SKY130HD flow configuration and constraints
+docs/                walkthrough, plan, legacy images/results
+src/                 preserved legacy subset RTL
+tb/*.v               preserved legacy waveform tests
 ```
 
----
+## Build and verification
 
-## Processor Architecture
+On this Windows machine, run the installed Questa/ModelSim regression directly:
 
-The processor is implemented as a single-cycle datapath. Each instruction is fetched, decoded, executed, and written back within one clock cycle.
-
-```text
-Program Counter
-      |
-      v
-Instruction Memory
-      |
-      v
-Instruction Decode
-      |
-      +------------------+
-      |                  |
-      v                  v
-Control Unit       Register File
-      |                  |
-      |                  v
-      |          Immediate Generator
-      |                  |
-      +---------> ALU <---+
-                    |
-                    v
-              Data Memory
-                    |
-                    v
-              Write Back
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-questa.ps1 all
 ```
 
----
+With GNU Make installed, the requested targets are:
 
-## Module Overview
-
-| Module | Description |
-|--------|-------------|
-| `program_counter.v` | Stores the current instruction address and updates to the next address on every clock cycle. |
-| `instruction_memory.v` | Stores the instruction sequence and outputs the instruction based on the current PC value. |
-| `control_unit.v` | Decodes opcode, funct3, and funct7 fields to generate control signals. |
-| `register_file.v` | Implements 32 registers of 32-bit width with two read ports and one write port. Register `x0` is hardwired to zero. |
-| `immediate_generator.v` | Extracts and sign-extends immediate values for I-Type, S-Type, and B-Type instructions. |
-| `alu.v` | Performs arithmetic and logical operations such as ADD, SUB, AND, OR, and XOR. |
-| `data_memory.v` | Supports load and store operations using `lw` and `sw`. |
-| `cpu_top.v` | Connects all modules to form the complete single-cycle processor. |
-
----
-
-## CPU Interconnections
-
-### 1. Program Counter to Instruction Memory
-
-The Program Counter provides the address of the current instruction.
-
-```verilog
-instruction_memory IMEM (
-    .PC(PC),
-    .Instruction(Instruction)
-);
+```sh
+make lint
+make unit-test
+make core-test
+make isa-test
+make test
+make clean
 ```
 
-The instruction memory uses:
+`make lint` requires Verilator. `make test` runs unit and core suites with
+Questa. For manual Questa use:
 
-```verilog
-Instruction = memory[PC[31:2]];
+```tcl
+vlib work
+vlog -sv rtl/*.v tb/unit/unit_tb.sv tb/core/core_tb.sv
+vsim -c unit_tb -do "run -all; quit -f"
+vsim -c core_tb -do "run -all; quit -f"
 ```
 
-This converts byte addressing into word addressing.
-
-```text
-PC = 0   -> memory[0]
-PC = 4   -> memory[1]
-PC = 8   -> memory[2]
-PC = 12  -> memory[3]
-```
-
----
-
-### 2. Instruction Field Extraction
-
-The 32-bit instruction is split into RISC-V instruction fields.
-
-```verilog
-opcode = Instruction[6:0];
-rd     = Instruction[11:7];
-funct3 = Instruction[14:12];
-rs1    = Instruction[19:15];
-rs2    = Instruction[24:20];
-funct7 = Instruction[31:25];
-```
-
-These fields are passed to the Control Unit and Register File.
-
----
-
-### 3. Control Unit
-
-The Control Unit generates control signals based on the instruction type.
-
-| Signal | Purpose |
-|--------|---------|
-| `RegWrite` | Enables writing into the register file |
-| `ALUSrc` | Selects ALU second input from register or immediate |
-| `MemRead` | Enables data memory read |
-| `MemWrite` | Enables data memory write |
-| `MemtoReg` | Selects write-back data from memory or ALU |
-| `Branch` | Enables branch decision logic |
-| `ImmSel` | Selects immediate format |
-| `ALU_Sel` | Selects ALU operation |
-
----
-
-### 4. Register File to ALU
-
-The Register File provides two source operands.
-
-```verilog
-ReadData1 = registers[rs1];
-ReadData2 = registers[rs2];
-```
-
-For R-Type instructions:
-
-```text
-ALU input A = ReadData1
-ALU input B = ReadData2
-```
-
-For I-Type, Load, and Store instructions:
-
-```text
-ALU input B = Immediate value
-```
-
-This selection is done using:
-
-```verilog
-assign ALU_B = (ALUSrc) ? ImmOut : ReadData2;
-```
-
----
-
-### 5. Immediate Generator
-
-The Immediate Generator extracts constants from instructions.
-
-Examples:
-
-| Instruction | Immediate |
-|------------|-----------|
-| `addi x5, x0, 10` | `10` |
-| `sw x5, 8(x1)` | `8` |
-| `beq x5, x6, 8` | `8` |
-
-The module supports:
-
-```text
-I-Type immediate
-S-Type immediate
-B-Type immediate
-```
-
----
-
-### 6. ALU to Data Memory
-
-The ALU performs arithmetic or address calculation.
-
-For arithmetic instructions:
-
-```text
-ALU_Out = calculation result
-```
-
-For memory instructions:
-
-```text
-ALU_Out = memory address
-```
-
-Example:
-
-```assembly
-lw x5, 0(x1)
-sw x5, 0(x1)
-```
-
-The ALU calculates:
-
-```text
-Address = x1 + immediate
-```
-
----
-
-### 7. Write Back Path
-
-The result written back to the register file is selected using `MemtoReg`.
-
-```verilog
-assign WriteBackData = (MemtoReg) ? MemReadData : ALU_Out;
-```
-
-For arithmetic instructions:
-
-```text
-WriteBackData = ALU_Out
-```
-
-For load instructions:
-
-```text
-WriteBackData = MemReadData
-```
-
----
-
-### 8. PC Update Logic
-
-The processor normally moves to the next instruction using:
-
-```verilog
-PC_plus_4 = PC + 4;
-```
-
-For branch instructions:
-
-```verilog
-Branch_Target = PC + ImmOut;
-Branch_Taken  = Branch & Zero;
-```
-
-Final PC selection:
-
-```verilog
-PC_next = (Branch_Taken) ? Branch_Target : PC_plus_4;
-```
-
----
-
-## Test Program Used in CPU Top
-
-The instruction memory was initialized with the following test program:
-
-```assembly
-nop
-addi x5, x0, 10
-addi x6, x0, 20
-add  x7, x5, x6
-sub  x8, x7, x6
-```
-
-Machine code stored in instruction memory:
-
-| Address | Instruction | Assembly |
-|---------|-------------|----------|
-| `0` | `00000013` | `nop` |
-| `4` | `00A00293` | `addi x5, x0, 10` |
-| `8` | `01400313` | `addi x6, x0, 20` |
-| `12` | `006283B3` | `add x7, x5, x6` |
-| `16` | `40638433` | `sub x8, x7, x6` |
-
-Expected register results:
-
-| Register | Expected Value | Hex |
-|----------|----------------|-----|
-| `x5` | `10` | `0000000A` |
-| `x6` | `20` | `00000014` |
-| `x7` | `30` | `0000001E` |
-| `x8` | `10` | `0000000A` |
-
----
-
-## Simulation Results
-
-
-
-### Final CPU Integration Waveform
-
-<img src="docs/Final_CPU.png" width="900"/>
-
----
-
-## Simulation Summary
-
-| Module | Testbench | Status |
-|--------|-----------|--------|
-| ALU | `alu_tb.v` | Simulated |
-| Register File | `register_file_tb.v` | Simulated |
-| Program Counter | `program_counter_tb.v` | Simulated |
-| Instruction Memory | `instruction_memory_tb.v` | Simulated |
-| Immediate Generator | `immediate_generator_tb.v` | Simulated |
-| Control Unit | `control_unit_tb.v` | Simulated |
-| Data Memory | `data_memory_tb.v` | Simulated |
-| CPU Top | `cpu_top_tb.v` | Simulated |
-
----
-
-## Current Status
-
-A working educational single-cycle processor implementing a limited RV32I subset has been completed and simulated using module-level and CPU-level testbenches.
-
-The current testbenches generate simulation stimulus for waveform inspection. They do not yet contain automated assertions, full instruction-level regression tests, or official RISC-V ISA compliance testing.
-
----
-
-## OpenROAD Flow
-
-Use `cpu_core` as the synthesis top for OpenROAD Flow Scripts. It exposes
-instruction and data-memory buses so the processor remains observable and its
-memories can use resources from the selected technology. The original
-`cpu_top` remains the self-contained simulation wrapper.
-
-Sky130HD starter configuration and timing constraints are under `openroad/`.
-See `openroad/README.md` for the run command.
+The directed core test covers positive/negative immediates, signed/unsigned
+comparisons, shifts 0/31 at unit or core level, taken/not-taken and forward/
+backward branches, jump links, load extension, byte lanes/strobes, x0, invalid
+encodings, instruction/data alignment, reset during execution, ECALL, and
+EBREAK. Mismatches use `$fatal`; PASS is printed only after all checks.
+
+### Latest local results (2026-08-20)
+
+| Check | Result |
+|---|---|
+| Questa RTL compile | Pass, 0 errors, 0 warnings |
+| Unit regression | Pass, 46 checks |
+| Core directed regression | Pass, 40 checks |
+| Verilator lint | Not run: tool unavailable |
+| Official RISC-V architectural tests | Not integrated/run |
+
+The GNU cross-toolchain is not installed here. After installing it, rebuild the
+example using `scripts/build-programs.sh`; it defaults to
+`riscv64-unknown-elf-gcc -march=rv32i -mabi=ilp32`.
+
+## Architectural-test status
+
+Internal directed tests and official tests are deliberately separate. No
+random/generated suite is presently included. No `riscv-arch-test` or Sail
+reference-model run has been performed, so this project does not claim official
+RV32I compliance. `make isa-test` reports the missing integration instead of
+fabricating success.
+
+## OpenROAD
+
+`openroad/config.mk` uses `cpu_core`, includes only synthesizable RTL, and keeps
+the `sky130hd` platform. The starter constraint is 20 ns (50 MHz), 35% core
+utilization, and 4 ns external I/O delays. See `openroad/README.md`.
+
+OpenROAD and Yosys were unavailable during this upgrade, so the updated core
+has no recorded synthesis, area, timing, routing, power, IR-drop, or GDS result.
+Historical images under `docs/openroad-results/` apply only to the older subset.
+Even a successful educational OpenROAD run is not tapeout-ready or signoff.
+
+## Design changes from the original
+
+The original embedded demonstration memories were removed from the synthesis
+top, decode was changed from a few one-bit controls to explicit multiway
+controls, all immediate formats and RV32I ALU functions were added, byte strobes
+and access-size logic were introduced, and traps became visible architectural
+outputs. The simple single-cycle character was retained for readability.
+
+See `docs/INSTRUCTION_WALKTHROUGH.md` for examples through every datapath stage
+and `docs/IMPLEMENTATION_PLAN.md` for implementation status.
+
+## Known limitations and next steps
+
+- Add valid/ready memory transactions and stalls for realistic SRAMs/buses.
+- Integrate `riscv-arch-test` with a signature region and Sail reference model.
+- Add constrained-random differential testing and functional coverage.
+- Run Verilator lint, Yosys synthesis, formal x0/trap properties, and OpenROAD.
+- Consider a multicycle or pipelined implementation after preserving this core
+  as the simple reference design.

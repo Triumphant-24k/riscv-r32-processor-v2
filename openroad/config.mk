@@ -1,16 +1,17 @@
-export DESIGN_NICKNAME = practice_rv32i
+export DESIGN_NICKNAME = educational_rv32i
 export DESIGN_NAME     = cpu_core
 export PLATFORM        = sky130hd
 
 PROJECT_HOME := $(abspath $(dir $(DESIGN_CONFIG))/..)
 
 export VERILOG_FILES = \
-    $(PROJECT_HOME)/src/alu.v \
-    $(PROJECT_HOME)/src/control_unit.v \
-    $(PROJECT_HOME)/src/cpu_core.v \
-    $(PROJECT_HOME)/src/immediate_generator.v \
-    $(PROJECT_HOME)/src/program_counter.v \
-    $(PROJECT_HOME)/src/register_file.v
+    $(PROJECT_HOME)/rtl/alu.v \
+    $(PROJECT_HOME)/rtl/branch_unit.v \
+    $(PROJECT_HOME)/rtl/control_unit.v \
+    $(PROJECT_HOME)/rtl/cpu_core.v \
+    $(PROJECT_HOME)/rtl/immediate_generator.v \
+    $(PROJECT_HOME)/rtl/load_store_unit.v \
+    $(PROJECT_HOME)/rtl/register_file.v
 
 export SDC_FILE = $(PROJECT_HOME)/openroad/constraint.sdc
 

@@ -1,5 +1,7 @@
 # QuestaSim
 work/
+lint_work/
+build/
 transcript
 vsim.wlf
 wlf*
