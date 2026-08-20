@@ -1,4 +1,4 @@
-param([ValidateSet('unit','core','all')] [string]$Suite = 'all')
+param([ValidateSet('unit','core','memory','generated','all')] [string]$Suite = 'all')
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
 $rtl = @(
@@ -23,5 +23,17 @@ try {
         if ($LASTEXITCODE -ne 0) { throw 'core test compilation failed' }
         & vsim -c core_tb -do 'run -all; quit -f'
         if ($LASTEXITCODE -ne 0) { throw 'core regression failed' }
+    }
+    if ($Suite -in @('memory','all')) {
+        & vlog -sv tb/core/memory_wait_tb.sv
+        if ($LASTEXITCODE -ne 0) { throw 'memory-wait test compilation failed' }
+        & vsim -c memory_wait_tb -do 'run -all; quit -f'
+        if ($LASTEXITCODE -ne 0) { throw 'memory-wait regression failed' }
+    }
+    if ($Suite -in @('generated','all')) {
+        & vlog -sv tb/core/generated_tb.sv
+        if ($LASTEXITCODE -ne 0) { throw 'generated test compilation failed' }
+        & vsim -c generated_tb -do 'run -all; quit -f'
+        if ($LASTEXITCODE -ne 0) { throw 'generated regression failed' }
     }
 } finally { Pop-Location }

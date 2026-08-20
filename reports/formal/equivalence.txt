@@ -1,0 +1,11 @@
+Formal properties — PASS (2026-08-20)
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-formal.ps1
+Engine: SymbiYosys/ABC PDR, depth 20; all 8 assertions proved.
+
+Independent RTL-to-synthesis equivalence — FAIL / NOT ESTABLISHED
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-equivalence.ps1
+Result: equiv_status -assert found 1,208 unproven $equiv cells.
+
+ORFS post-resize LEC — NOT RUN. LEC_CHECK=0 avoids an unsupported AVX-512
+instruction in the alternative local image. Formal property success is not
+equivalence success; equivalence is not claimed.

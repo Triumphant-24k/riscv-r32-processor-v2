@@ -25,4 +25,13 @@ module register_file (
 
     assign read_data_1 = (read_address_1 == 5'd0) ? 32'd0 : registers[read_address_1];
     assign read_data_2 = (read_address_2 == 5'd0) ? 32'd0 : registers[read_address_2];
+
+`ifdef FORMAL
+    reg formal_past_valid = 1'b0;
+    always @(posedge clk) begin
+        formal_past_valid <= 1'b1;
+        if (formal_past_valid && !rst)
+            assert(registers[0] == 32'd0);
+    end
+`endif
 endmodule

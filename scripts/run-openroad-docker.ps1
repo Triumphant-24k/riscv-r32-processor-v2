@@ -1,7 +1,7 @@
 param(
     [ValidateSet('synth','flow')] [string]$Stage = 'synth',
     [string]$Image = 'openroad/orfs:v2-compatible-20260818',
-    [string]$Variant = 'compat',
+    [string]$Variant = 'handshake',
     [bool]$DisableLecForAvx512Compatibility = $true
 )
 $ErrorActionPreference = 'Stop'

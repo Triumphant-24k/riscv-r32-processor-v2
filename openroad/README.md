@@ -1,96 +1,38 @@
-# OpenROAD Flow Scripts
+# OpenROAD SKY130HD flow
 
-The synthesis top is `cpu_core`. Simulation memory, wrappers, and testbenches
-are excluded. `config.mk` targets `sky130hd`, begins at a 20 ns (50 MHz) clock,
-and uses 35% core utilization. External instruction/data inputs and outputs use
-a 4 ns boundary delay.
-
-Run tests first. From Linux/WSL with OpenROAD Flow Scripts:
-
-```sh
-make test
-make --file=/path/to/OpenROAD-flow-scripts/flow/Makefile \
-  DESIGN_CONFIG="$PWD/openroad/config.mk"
-```
-
-The interface assumes combinational memory reads. Production integration
-should add valid/ready or synchronous-memory stall logic and replace the
-starter boundary constraints with measured SoC timing.
-
-## Result status (2026-08-20)
-
-The official `openroad/orfs:latest` Docker image was run with SKY130HD.
-Simulation and Questa lint passed before synthesis.
-
-| Metric | Result |
-|---|---:|
-| Yosys synthesis | PASS; 0 design-check problems |
-| Mapped standard cells | 7,335 |
-| Mapped cell area | 71,083.174 µm² |
-| Sequential cells | 1,061 |
-| Sequential area share | 37.35% |
-| Floorplan die | 454.660 × 454.660 µm |
-| Floorplan core utilization | 35.2% |
-| Early setup WNS | +5.45 ns at 20 ns |
-| Early estimated minimum period | 14.55 ns (68.74 MHz) |
-| Early estimated power | 2.53 mW |
-
-The complete compatibility run now passes synthesis, floorplanning, placement,
-CTS, global routing, detailed routing, antenna repair, parasitic extraction,
-timing, and GDS merge. Final results for the 20 ns constraint are:
-
-| Result | Value |
-|---|---:|
-| Final setup WNS | +1.32 ns |
-| Final hold slack | +0.50 ns |
-| Setup / hold violations | 0 / 0 |
-| Detailed-routing violations | 0 |
-| Antenna net / pin violations | 0 / 0 |
-| Placed design area | 81,482 µm² |
-| Core utilization | 40% |
-| Estimated total power | 5.39 mW |
-| Worst VDD / VSS IR drop | 0.112 mV / 0.0946 mV |
-
-The final layout is
-`build/openroad/results/sky130hd/educational_rv32i/compat/6_final.gds`;
-the same directory also contains final ODB, DEF, Verilog, SDC, and SPEF files.
-
-The current ORFS `latest` image and the first older-image run crashed in CTS on
-this non-AVX-512 host. The successful compatibility run therefore uses the
-cached image tagged `openroad/orfs:v2-compatible-20260818` and `LEC_CHECK=0`.
-This skips the flow's post-resize formal equivalence check; it does not mean
-equivalence passed. RTL simulation and Yosys structural checks remain separate
-checks. `scripts/run-openroad-docker.ps1` applies this workaround by default.
-Images under `docs/openroad-results/` remain legacy results for the old subset.
-
-To open the completed physical design interactively in OpenROAD through WSLg,
-run this from Windows PowerShell after the flow has completed:
+`cpu_core` is the synthesis top. Only maintained synthesizable files are used;
+simulation support, tests, and `legacy/` are excluded. Constraints use a 20 ns
+clock, 35% initial utilization, explicit min/max handshake I/O delays, and a
+false path for asynchronous reset. Reset deassertion must be synchronized by
+the integrating system.
 
 ```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-questa.ps1 all
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-openroad-docker.ps1 synth
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-openroad-docker.ps1 flow
 powershell -NoProfile -ExecutionPolicy Bypass -File scripts\open-openroad-gui.ps1
 ```
 
-Keep the PowerShell window open while using the GUI. Closing the OpenROAD
-window returns control to PowerShell.
+The current variant is `handshake`; outputs are under
+`build/openroad/{logs,reports,results}/sky130hd/educational_rv32i/handshake/`.
 
-## GUI screenshots
+| Metric | Latest result (2026-08-20) |
+|---|---:|
+| Yosys check | PASS, 0 problems |
+| Synthesized cells / area | 8,558 / 72,087.888 µm² |
+| Sequential cells | 1,175 |
+| Final area / utilization | 82,565 µm² / 40% |
+| Setup / hold slack | +9.08 ns / +0.47 ns |
+| Setup / hold violations | 0 / 0 |
+| Route / antenna-net / antenna-pin violations | 0 / 0 / 0 |
+| Max slew / capacitance violations | 13 / 5 |
+| Estimated total power | 10.7 mW |
+| Minimum period / Fmax | 10.92 ns / 91.61 MHz |
 
-The final routed processor database is shown with all routing layers enabled:
+![Current routed layout](../docs/openroad-handshake-results/final-all.webp)
 
-![Final routed cpu_core layout](../docs/openroad-v2-results/openroad-final-layout.png)
-
-The setup and hold tabs show positive endpoint slack in the displayed paths:
-
-| Setup timing | Hold timing |
-|---|---|
-| ![Setup timing report](../docs/openroad-v2-results/setup-timing-report.png) | ![Hold timing report](../docs/openroad-v2-results/hold-timing-report.png) |
-
-The endpoint histogram provides a distribution view of setup slack. Formal
-reported WNS/TNS and violation counts should be read from `6_finish.rpt` rather
-than inferred from a cropped GUI view.
-
-![Endpoint slack histogram](../docs/openroad-v2-results/endpoint-slack-histogram.png)
-
-An educational OpenROAD run is not foundry signoff. Tapeout also requires
-signoff DRC/LVS, antenna closure, extracted timing, power integrity, package,
-ESD, and manufacturing verification.
+ORFS uses the compatible local image and `LEC_CHECK=0` because another local
+binary crashes on this non-AVX-512 host. ORFS equivalence is skipped, not passed;
+an independent Yosys attempt also failed to establish equivalence. No current
+IR-drop result is claimed. Historical screenshots are under `legacy/docs/`.
+This is educational P&R, not foundry signoff or tapeout readiness.

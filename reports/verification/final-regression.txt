@@ -1,0 +1,8 @@
+Final maintained-RTL regression — 2026-08-20
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-questa.ps1 all
+Status: PASS
+Compile: 0 errors, 0 warnings
+Unit: PASS, 46 checks
+Directed core: PASS, 176 checks, 63 instruction scenarios
+Memory handshake: PASS — zero/fixed/random modes, one accepted store each
+Generated differential: PASS, 300 instructions, seed 52a1c0de

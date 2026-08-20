@@ -1,0 +1,16 @@
+OpenROAD maintained-handshake-RTL summary — 2026-08-20
+Platform SKY130HD; variant handshake; 20.0 ns clock
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-openroad-docker.ps1 flow
+Flow PASS through merged GDS; Yosys check problems 0
+Synthesized cells 8,558; mapped area 72,087.888 um^2; sequential cells 1,175
+CTS PASS: 1 clock, 1,175 sinks
+Die 457.835 x 457.835 um; final area 82,565 um^2; utilization 40%
+Setup WNS +9.08 ns / violations 0
+Hold WNS +0.47 ns / violations 0
+Minimum period 10.92 ns / Fmax 91.61 MHz
+Detailed-route violations 0; antenna net/pin violations 0/0
+Max slew/capacitance violations 13/5; estimated total power 10.7 mW
+IR drop NOT REPORTED for this revision
+Artifacts: build/openroad/results/sky130hd/educational_rv32i/handshake/6_final.{odb,def,v,sdc,spef,gds}
+Equivalence FAIL/NOT ESTABLISHED independently; ORFS LEC NOT RUN.
+Educational P&R only; not foundry signoff or tapeout-ready.

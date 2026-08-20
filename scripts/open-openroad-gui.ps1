@@ -18,7 +18,7 @@ exec docker run --rm \
   -v "`$(pwd)/build/openroad/reports:/OpenROAD-flow-scripts/flow/reports" \
   -v "`$(pwd)/build/openroad/objects:/OpenROAD-flow-scripts/flow/objects" \
   openroad/orfs:v2-compatible-20260818 bash -lc \
-  'source /OpenROAD-flow-scripts/env.sh >/dev/null; make -C /OpenROAD-flow-scripts/flow DESIGN_CONFIG=/design/openroad/config.mk FLOW_VARIANT=compat gui_final'
+  'source /OpenROAD-flow-scripts/env.sh >/dev/null; make -C /OpenROAD-flow-scripts/flow DESIGN_CONFIG=/design/openroad/config.mk FLOW_VARIANT=handshake gui_final'
 "@
 
 & wsl.exe -d Ubuntu-22.04 -- bash -lc $command

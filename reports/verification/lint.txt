@@ -1,0 +1,17 @@
+RV32I V2 baseline lint status
+Date: 2026-08-20
+
+Verilator lint: NOT RUN
+Reason: the `verilator` executable is not installed or available on PATH.
+Requested command:
+  verilator --lint-only -Wall --top-module cpu_core rtl/alu.v rtl/branch_unit.v rtl/control_unit.v rtl/cpu_core.v rtl/immediate_generator.v rtl/load_store_unit.v rtl/register_file.v
+
+Questa RTL compilation: PASS
+Command:
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-questa.ps1 all
+Compiler result:
+  Errors: 0
+  Warnings: 0
+
+Questa compilation is recorded separately from lint and is not presented as a
+substitute for Verilator lint.

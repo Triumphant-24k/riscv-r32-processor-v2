@@ -1,7 +1,8 @@
 # Instruction walkthroughs
 
-The core is single-cycle: combinational fetch/decode/execute/memory/write-back
-logic settles between rising edges, then the register file and PC update.
+The core is stallable and non-pipelined. Fetch request, fetch response, execute,
+and any data request/response occupy explicit states. PC and architectural state
+remain stable under backpressure; register write-back occurs on completion.
 
 ## Register operation: `sub x3, x1, x2`
 

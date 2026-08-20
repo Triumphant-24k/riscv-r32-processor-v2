@@ -1,0 +1,32 @@
+RV32I V2 baseline regression
+Date: 2026-08-20
+Repository revision: 03c8bcf
+
+Command:
+  powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-questa.ps1 all
+
+Result: PASS
+
+RTL compile:
+  Tool: ModelSim Intel FPGA Edition vlog 10.5b
+  Errors: 0
+  Warnings: 0
+
+Unit regression:
+  Result: PASS
+  Checks: 46
+  Errors: 0
+  Warnings: 0
+
+Core directed regression:
+  Result: PASS
+  Checks: 40
+  Errors: 0
+  Warnings: 0
+
+Baseline limitations observed before RTL changes:
+  - The core test does not independently preserve and verify every instruction result.
+  - Instruction and data memory use combinational zero-wait-state interfaces.
+  - Official RISC-V architectural tests are not integrated or run.
+  - No generated/differential suite is present.
+  - No independent formal-property or logical-equivalence result is present.

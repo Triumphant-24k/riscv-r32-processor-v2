@@ -1,0 +1,8 @@
+Official architectural tests — 2026-08-20
+Framework: ACT4, authoritative riscv/riscv-arch-test upstream
+Pinned commit: 4281ead674c5e36fe5f6b73b4a5854b25037c3cf
+Command: powershell -NoProfile -ExecutionPolicy Bypass -File scripts\run-act4.ps1
+Status: NOT RUN (command exited 2 as designed)
+Missing: ruby, bundle, riscv64-unknown-elf-gcc, riscv64-unknown-elf-objdump, sail_riscv_sim
+Remaining: complete DUT ELF/signature adapter and validate UDB configuration.
+No expected signature was edited. No official compliance claim is made.
