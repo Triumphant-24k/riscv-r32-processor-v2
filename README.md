@@ -121,6 +121,28 @@ a 20 ns clock constraint.
 
 ![Latest routing view](docs/openroad-handshake-results/final-routing.webp)
 
+### OpenROAD GUI evidence
+
+These screenshots were captured from the current
+`sky130hd/educational_rv32i/handshake/6_final` database with its final SDC and
+SPEF loaded—not from the earlier compatibility revision.
+
+![Current handshake cpu_core in the OpenROAD GUI](docs/openroad-handshake-results/openroad-final-layout.png)
+
+The displayed hold endpoints have positive slack around 0.513–0.514 ns. The
+generated text report remains authoritative and gives the worst hold slack as
++0.47 ns.
+
+![Current hold timing endpoints](docs/openroad-handshake-results/hold-timing-report.png)
+
+The setup-slack histogram contains only positive displayed bins. It also shows
+1,193 unconstrained pins; these are primarily non-clocked external interface
+ports governed by boundary delays rather than sequential endpoints. The chart
+is supporting visualization, not a replacement for reviewing the SDC and
+`6_finish.rpt`.
+
+![Current endpoint setup-slack histogram](docs/openroad-handshake-results/endpoint-slack-histogram.png)
+
 Final artifacts are in
 `build/openroad/results/sky130hd/educational_rv32i/handshake/6_final.{odb,def,v,sdc,spef,gds}`.
 

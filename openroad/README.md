@@ -31,6 +31,23 @@ The current variant is `handshake`; outputs are under
 
 ![Current routed layout](../docs/openroad-handshake-results/final-all.webp)
 
+## Current GUI screenshots
+
+The complete GUI view below identifies the loaded database as the current
+`handshake/6_final` revision and shows its routed standard-cell layout.
+
+![OpenROAD handshake final database](../docs/openroad-handshake-results/openroad-final-layout.png)
+
+| Hold timing endpoints | Setup-slack distribution |
+|---|---|
+| ![Positive hold endpoints](../docs/openroad-handshake-results/hold-timing-report.png) | ![Positive setup-slack histogram](../docs/openroad-handshake-results/endpoint-slack-histogram.png) |
+
+The hold screenshot displays positive endpoint values around 0.513–0.514 ns;
+the authoritative worst hold slack in `6_finish.rpt` is +0.47 ns. The histogram
+shows 1,193 unconstrained pins and must not be interpreted as proof that every
+top-level path is constrained. Final numeric claims in this document come from
+the generated report, not from cropped GUI views.
+
 ORFS uses the compatible local image and `LEC_CHECK=0` because another local
 binary crashes on this non-AVX-512 host. ORFS equivalence is skipped, not passed;
 an independent Yosys attempt also failed to establish equivalence. No current
