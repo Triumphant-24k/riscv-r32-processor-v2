@@ -2,7 +2,7 @@ QUESTA := powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-questa
 SYNTH_RTL := rtl/alu.v rtl/branch_unit.v rtl/control_unit.v rtl/cpu_core.v \
 	rtl/immediate_generator.v rtl/load_store_unit.v rtl/register_file.v
 
-.PHONY: lint unit-test core-test isa-test test clean
+.PHONY: lint unit-test core-test isa-test test openroad-synth openroad-flow clean
 lint:
 	@echo "Verilator is required: verilator --lint-only -Wall --top-module cpu_core $(SYNTH_RTL)"
 	verilator --lint-only -Wall --top-module cpu_core $(SYNTH_RTL)
@@ -19,6 +19,12 @@ isa-test:
 	@false
 
 test: unit-test core-test
+
+openroad-synth:
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-openroad-docker.ps1 synth
+
+openroad-flow:
+	powershell -NoProfile -ExecutionPolicy Bypass -File scripts/run-openroad-docker.ps1 flow
 
 clean:
 	powershell -NoProfile -Command "if (Test-Path work) { Remove-Item -LiteralPath work -Recurse -Force }; Remove-Item transcript,vsim.wlf -Force -ErrorAction SilentlyContinue"

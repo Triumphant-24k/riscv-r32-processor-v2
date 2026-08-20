@@ -136,6 +136,8 @@ make unit-test
 make core-test
 make isa-test
 make test
+make openroad-synth
+make openroad-flow
 make clean
 ```
 
@@ -183,10 +185,13 @@ fabricating success.
 the `sky130hd` platform. The starter constraint is 20 ns (50 MHz), 35% core
 utilization, and 4 ns external I/O delays. See `openroad/README.md`.
 
-OpenROAD and Yosys were unavailable during this upgrade, so the updated core
-has no recorded synthesis, area, timing, routing, power, IR-drop, or GDS result.
-Historical images under `docs/openroad-results/` apply only to the older subset.
-Even a successful educational OpenROAD run is not tapeout-ready or signoff.
+The official `openroad/orfs:latest` Docker flow successfully synthesized the
+SKY130HD core: 7,335 mapped cells and 71,083.174 µm² cell area, with zero Yosys
+design-check problems. Early floorplan timing reported +5.45 ns setup WNS at
+20 ns and estimated 2.53 mW power. The optional continuation reached CTS but
+the container binary terminated with `illegal instruction`; therefore no final
+hold, routing, IR-drop, or GDS result is claimed. See `openroad/README.md`.
+Historical images under `docs/openroad-results/` apply only to the old subset.
 
 ## Design changes from the original
 
